@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('register', 'Auth\AuthApiController@register');
-Route::post('login', 'Auth\AuthApiController@authenticate');
+Route::post('login', 'Auth\AuthApiController@login');
 
-Route::group(['middleware' => ['jwt.verify']], function() {
-    Route::get('user', 'AuthApiController@getAuthenticatedUser');
+Route::group(['middleware' => ['auth:api']], function() {
+
 });
 
