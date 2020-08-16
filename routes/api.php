@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('register', 'Auth\AuthApiController@register');
 Route::post('login', 'Auth\AuthApiController@login');
 
+Route::get('/authors',  'AuthorsController@index');
+Route::get('/authors/{id}',  'AuthorsController@show');
+
+Route:: get('/books', 'BookController@index');
+
 Route::group(['middleware' => ['auth:api']], function() {
 
 });
