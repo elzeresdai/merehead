@@ -7,7 +7,6 @@ use App\Http\Requests\RegisterUserRequest;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\Exceptions\JWTException;
 use JWTAuth;
 
 class AuthApiController extends Controller
