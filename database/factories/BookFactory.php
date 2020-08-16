@@ -10,6 +10,6 @@ $factory->define(\App\Book::class, function (Faker $faker) {
         'title'=> $faker->sentence($nbWords = rand(1,3), $variableNbWords = true),
         'pages'=> rand(100,1000),
         'annotation'=>$faker->sentence(5),
-        'img'=>base64_decode($faker->image())
+
     ];
 });
