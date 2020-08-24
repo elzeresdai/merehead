@@ -3,40 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Authors;
-use Mockery\Exception;
+use App\Http\Resources\AuthorResource;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AuthorsController extends Controller
 {
 
-
     /**
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
-        try {
-            $response = Authors::paginate(10);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'no_authors_detected'], $e->getCode());
-        }
-
-        return response()->json([$response],200);
+        return AuthorResource::collection(Authors::paginate(25));
 
     }
 
-
-    /**
-     * @param $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function show($id)
     {
-        $response = Authors::with('books')->where('id', $id)->first();
-
-        if (!$response) {
-            return response()->json(['error' => 'no_such_author'],404);
+        try {
+            $result =new AuthorResource(Authors::findOrFail($id));
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['status' => 404, 'message' => 'Author not found']);
         }
-        return response()->json([$response],200);
-    }
 
+        return $result;
+    }
 }

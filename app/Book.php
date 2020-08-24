@@ -12,7 +12,12 @@ class Book extends Model
 
    public function authors()
    {
-       return $this->hasOne(Authors::class);
+       return $this->hasOne(Authors::class,'id', 'author_id');
+   }
+
+   public function user()
+   {
+       return $this->hasOne(User::class,'id','user_id');
    }
 
 }

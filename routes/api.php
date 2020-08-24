@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('register', 'Auth\AuthApiController@register');
-Route::post('login', 'Auth\AuthApiController@login');
+Route::post('login', 'Auth\AuthApiController@login')->name('login');
 Route::get('user', 'Auth\AuthApiController@getAuthenticatedUser');
 
 Route::get('/authors', 'AuthorsController@index');
@@ -24,11 +24,9 @@ Route::get('/authors/{id}', 'AuthorsController@show');
 
 Route:: get('/books', 'BookController@index');
 
+Route::post('/book', 'BookController@store');
+Route::get('/user_books', 'BookController@showByUser');
+Route::put('/update/{book_id}', 'BookController@update');
+Route::delete('/book/{id}', 'BookController@destroy');
 
-Route::group(['middleware' => ['auth:api']], function () {
-    Route::post('/book', 'BookController@store');
-    Route::get('/user_books', 'BookController@showByUser');
-    Route::put('/update/{book_id}', 'BookController@update');
-    Route::delete('/book/{id}', 'BookController@destroy');
-});
 
