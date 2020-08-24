@@ -5,48 +5,48 @@ namespace App\Http\Controllers;
 use App\Book;
 use App\Http\Requests\CreateBookRequest;
 use App\Http\Requests\UpdateBookRequest;
+use App\Http\Resources\UserResourse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Mockery\Exception;
+use App\Http\Resources\BookResource;
 
 use JWTAuth;
 
 class BookController extends Controller
 {
-    protected $user;
 
     public function __construct()
     {
-        $this->user = JWTAuth::parseToken()->authenticate();
+        $this->middleware('auth:api')->except(['index']);
     }
 
+
     /**
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
-        $response = Book::paginate(10);
-        if (!$response) {
-            return response()->json(['error' => 'no_books'], 404);
-        }
-        return response()->json(['status' => 'ok', $response], 200);
+        return BookResource::collection(Book::paginate(25));
     }
 
 
     /**
      * @param CreateBookRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return BookResource|\Illuminate\Http\JsonResponse
      */
     public function store(CreateBookRequest $request)
     {
-
-        if ($request->hasFile('img')) {
-            $img = $request->file('img');
-            $data = file_get_contents($img);
-            $dataString = 'data:image/' . $img->extension() . ';base64,' . base64_encode($data);
-        }
-
         try {
+
+            if ($request->hasFile('img')) {
+                $img = $request->file('img');
+                $data = file_get_contents($img);
+                $dataString = 'data:image/' . $img->extension() . ';base64,' . base64_encode($data);
+            }
+
+            $user = JWTAuth::parseToken()->authenticate();
             $response = Book::create([
-                'user_id' => $request->get('user_id'),
+                'user_id' => $user->id,
                 'author_id' => $request->get('author_id'),
                 'pages' => $request->get('pages'),
                 'title' => $request->get('title'),
@@ -57,7 +57,7 @@ class BookController extends Controller
         } catch (Exception $e) {
             return response()->json($e->getMessage(), $e->getCode());
         }
-        return response()->json(['status' => 'ok', $response], 200);
+        return new BookResource($response);
 
     }
 
@@ -65,25 +65,23 @@ class BookController extends Controller
     public function showByUser()
     {
         try {
-            $userID = $this->user->id;
-            $result = Book::where('user_id', $userID)->get();
+            $user = JWTAuth::parseToken()->authenticate();
+            $result = new UserResourse($user);
 
-            if (empty($result)) {
-                return response()->json(['error' => 'no_books_added_by_this_user'], 404);
-            }
         } catch (Exception $e) {
             return response()->json($e->getMessage(), $e->getCode());
         }
 
-        return response()->json(['status' => 'ok', $result], 200);
+        return $result;
     }
 
     public function update(UpdateBookRequest $request, $id)
     {
+        $user = JWTAuth::parseToken()->authenticate();
         try {
-            $result = Book::findOrFail($id);
+            $result = new BookResource(Book::findOrFail($id));
 
-            if ($this->user->id != $result->user_id) {
+            if ($user->id != $result->user_id) {
                 throw new Exception('You are not author of this book!', 403);
             }
 
@@ -93,27 +91,28 @@ class BookController extends Controller
                 }
             }
 
-        } catch (Exception $e) {
-            return response()->json($e->getMessage(), $e->getCode());
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['status' => 404, 'message' => 'Book not found']);
         }
 
-        return response()->json(['status' => 'ok', $result], 200);
+        return $result;
     }
 
 
     public function destroy($id)
     {
+        $user = JWTAuth::parseToken()->authenticate();
         try {
 
-            $result = Book::find($id);
+            $result = Book::findOrFail($id);
 
-            if ($this->user->id != $result->user_id) {
-                throw new Exception('You are not author of this book!', 403);
+            if ($user->id != $result->user_id) {
+                return response()->json(['status' => 403, 'message' => 'You are not author of this book!']);
             }
             $result->delete();
 
-        } catch (Exception $e) {
-            return response()->json($e->getMessage(), $e->getCode());
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['status' => 404, 'message' => 'Book not found']);
         }
 
         return response()->json(['status' => 'ok'], 200);
