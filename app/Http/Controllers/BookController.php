@@ -36,13 +36,8 @@ class BookController extends Controller
      */
     public function store(CreateBookRequest $request)
     {
-        try {
 
-            if ($request->hasFile('img')) {
-                $img = $request->file('img');
-                $data = file_get_contents($img);
-                $dataString = 'data:image/' . $img->extension() . ';base64,' . base64_encode($data);
-            }
+        try {
 
             $user = JWTAuth::parseToken()->authenticate();
             $response = Book::create([
@@ -51,7 +46,7 @@ class BookController extends Controller
                 'pages' => $request->get('pages'),
                 'title' => $request->get('title'),
                 'annotation' => $request->get('annotation'),
-                'img' => isset($dataString) ? $dataString : null
+                'img' => $request->hasFile('img') ? $request->file('img') : null
             ]);
 
         } catch (Exception $e) {
@@ -79,23 +74,29 @@ class BookController extends Controller
     {
         $user = JWTAuth::parseToken()->authenticate();
         try {
-            $result = new BookResource(Book::findOrFail($id));
+            $result = Book::findOrFail($id);
 
             if ($user->id != $result->user_id) {
                 throw new Exception('You are not author of this book!', 403);
             }
 
             foreach ($request->all() as $key => $value) {
-                if ($result->$key) {
-                    $result->update([$key => $value]);
+                if ($result->$key && $result->$key != 'img') {
+                    $result->$key = $value;
                 }
             }
+            if ($request->hasFile('img')) {
+                $result->img = $request->file('img');
+            }
+
+            $result->save();
+
 
         } catch (ModelNotFoundException $e) {
             return response()->json(['status' => 404, 'message' => 'Book not found']);
         }
 
-        return $result;
+        return new BookResource($result);
     }
 
 
